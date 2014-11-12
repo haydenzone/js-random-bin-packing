@@ -38,9 +38,7 @@ function Slot(args) {
 	this.taken = false;
 };
 Slot.prototype.markTaken = function() { 
-	// console.log('marking x=', this.x,' y =', this.y);
 	if(!this.taken) { 
-		console.log('                  actually calling!');
 		this.onTaken.call(this);
 		this.taken = true;
 	}
@@ -108,30 +106,17 @@ var dimensionStructures = _(dimensions).map(function(dim) {
 		.each(function(slot) { 
 			var node = list.push(slot);
 			slot.registerTakenListener(function() { 
-				// var start = node.list.toArray();
-				// console.log(node.prev.data);
-				// console.log(node.next.data);
 				node.remove();
-				// var diff = node.list.toArray().length - start.length;
-				// console.log('difference = ',diff);
-				// console.log(node.list.toArray().length);
-				// if(diff !== -1) debugger;
-				 // console.log('removing node from list',node.data);
 			});
 		});
-	// list.dump();
 	return {
 		list:list,
 		slotGrid: slotGrid
 	};
-	// console.table(slotGrid.slotTable);
 })
 for(var level = 0; level< dimensionStructures.length; level++) { 
 	var list = dimensionStructures[level].list;
-	 // console.log('level',level);
-	  // console.log(dimensionStructures[level].slotGrid);
 	_(45).times(function(slot_i) { 
-		// console.log('----getting element');
 
 		var slot;
 		try { 
@@ -143,7 +128,6 @@ for(var level = 0; level< dimensionStructures.length; level++) {
   [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)])
   && (lor.length == 6) ?  lor : co(lor); })('');
 		if(slot.taken) throw "Spot already taken";
-		 // console.log("    ",slot);
 		_(slot.height).times(function(i) { 
 			_(slot.width).times(function(j) {
 				if(!_.isUndefined(output[i+slot.y]) && !_.isUndefined(output[i+slot.y][j+slot.x])) { 
@@ -153,26 +137,12 @@ for(var level = 0; level< dimensionStructures.length; level++) {
 				}
 			});
 		});
-		console.log('MARKING A NODE');
 		_(dimensionStructures.slice(level+1)).each(function(dimension) { 
-			// console.log('Marking ', dimension.slotGrid.slotHeight, dimension.slotGrid.slotWidth);
-			console.log('----dimension', dimension.slotGrid.slotHeight, dimension.slotGrid.slotWidth, 'called with', slot);
 			dimension.slotGrid.markTaken(slot);
 		});
 	})
 }
 console.table(output);
-
-// console.log(slotGrid.getAllSlots())
-
-// slotGrid.markTaken(new Slot({ 
-// 	height: 5,
-// 	width: 5,
-// 	x: 2,
-// 	y: 2
-// }));
-
-// console.table(slotGrid.slotTable);
 
 
 
