@@ -86,6 +86,19 @@ SlotGrid.prototype.markTaken = function(slot) {
 	}
 };
 
+function chooseRandomColor() {
+	return '#' + (function co(lor){   return (lor += [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)]) && (lor.length == 6) ?  lor : co(lor); })('');
+}
+
+_.mixin({ 
+	hasIndex:function(arr,i,j) { 
+		return !_.isUndefined(arr[i]) && !_.isUndefined(arr[i][j]);
+	},
+	isInt: function (n){
+	    return typeof n== "number" && isFinite(n) && n%1===0;
+	}
+});
+
 
 
 var output = _(20).times(function() { 
@@ -124,14 +137,16 @@ for(var level = 0; level< dimensionStructures.length; level++) {
 		} catch(e) { 
 			return;
 		}
-		var color = '#' + (function co(lor){   return (lor +=
-  [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)])
-  && (lor.length == 6) ?  lor : co(lor); })('');
-		if(slot.taken) throw "Spot already taken";
+		var color = chooseRandomColor();
+		if(slot.taken) { 
+			throw "Spot already taken";
+		} 
 		_(slot.height).times(function(i) { 
 			_(slot.width).times(function(j) {
-				if(!_.isUndefined(output[i+slot.y]) && !_.isUndefined(output[i+slot.y][j+slot.x])) { 
-					if(output[i+slot.y][j+slot.x] !== 0) throw "Marking taken spot";
+				if(_(output).hasIndex(i+slot.y,j+slot.x)) { 
+					if(output[i+slot.y][j+slot.x] !== 0) {
+						throw "Marking taken spot";
+					}
 					output[i+slot.y][j+slot.x]= slot.width*slot.height;
 					setColor(i+slot.y,j+slot.x, color);
 				}
@@ -142,9 +157,48 @@ for(var level = 0; level< dimensionStructures.length; level++) {
 		});
 	})
 }
-console.table(output);
 
 
+	console.table(output);
+
+function nestedFor() { 
+	var args = _.toArray(arguments);
+	var fun = args.slice(-1)[0];
+	if(!_(fun).isFunction()) { 
+		throw "Last argument must be a function";
+	}
+	var upperBounds = args.slice(0,-1);
+	var curIndex = [];
+	_(upperBounds).each(function(arg) { 
+		if(!_(arg).isInt()) { 
+			throw "All but last argument must be integers";
+		}
+		curIndex.push(0);
+	});
+	//increment far right
+	while(1) { 
+		curIndex[curIndex.length-1]++;
+		for(var i = curIndex.length-1; i >= 0; i--) { 
+			if(curIndex[i] >= upperBounds[i]) { 
+				curIndex[i] = 0;
+				if(i === 0) { 
+					return; //end of loop
+				}
+				curIndex[i-1]++;
+			} else { 
+				break;
+			}
+		}
+		fun.apply(null, curIndex);
+	}
+
+	//overflow upwards 
+	//callfunction
+}
+
+nestedFor(5,5,5, function(i,j,k) { 
+	console.log(i,j, k);
+});
 
 
 
