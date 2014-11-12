@@ -1,0 +1,181 @@
+<style>
+td { 
+	width: 20px;
+	height: 20px;
+	border: 1px solid black;
+}
+</style>
+<script src="jquery-2.1.1.js"></script>
+<table class="output">
+
+</table>
+<script src="DoublyLinkedList.js"></script>
+<script src="underscore.js"></script>
+<script>
+_(20).times(function() { 
+	var $row = $('<tr>');
+	_(20).times(function() { 
+		$row.append('<td></td>');
+	})
+	$row.appendTo('.output');
+});
+function setColor(x,y, color) { 
+	$('.output tr').eq(y).find('td').eq(x).css('background-color', color);
+}
+var dimensions = [
+	[2,2],
+	[3,1],
+	[2,1],
+	[1,2]
+];
+
+//Given a slot, calculate all slots for other dimensions that are taken.
+function Slot(args) { 
+	this.x = args.x;
+	this.y = args.y;
+	this.width = args.width;
+	this.height = args.height;
+	this.taken = false;
+};
+Slot.prototype.markTaken = function() { 
+	// console.log('marking x=', this.x,' y =', this.y);
+	if(!this.taken) { 
+		console.log('                  actually calling!');
+		this.onTaken.call(this);
+		this.taken = true;
+	}
+}
+Slot.prototype.registerTakenListener = function(f) { 
+	this.onTaken = f;
+}
+
+function SlotGrid(args) { 
+	this.width = Math.ceil(args.areaWidth/args.slotWidth);
+	this.height = Math.ceil(args.areaHeight/args.slotHeight);
+	this.slotHeight = args.slotHeight;
+	this.slotWidth = args.slotWidth;
+
+	this.slotTable = new Array(this.height);
+	for(var i = 0; i < this.height; i++) { 
+		this.slotTable[i] = new Array(this.width);
+	}
+	for(var i = 0; i < this.height; i++) { 
+		for(var j = 0; j < this.width; j++) { 
+			this.slotTable[i][j] = new Slot({
+				width: this.slotWidth,
+				height: this.slotHeight,
+				x: this.slotWidth*j,
+				y: this.slotHeight*i
+			});
+		}
+	}
+
+};
+SlotGrid.prototype.getAllSlots = function() { 
+	return _(this.slotTable).flatten();
+};
+SlotGrid.prototype.markTaken = function(slot) { 
+	var xStart = Math.floor(slot.x/this.slotWidth);
+	var xEnd = Math.ceil((slot.x+slot.width)/this.slotWidth);
+	var yStart = Math.floor(slot.y/this.slotHeight);
+	var yEnd = Math.ceil((slot.y+slot.height)/this.slotHeight);
+	for(var i = xStart; i < xEnd; i++) { 
+		for(var j = yStart; j < yEnd; j++) { 
+			try { 
+				this.slotTable[j][i].markTaken();
+			} catch(e){}
+		}
+	}
+};
+
+
+
+var output = _(20).times(function() { 
+	return _(20).times(function(){ 
+		return 0;
+	});
+});
+var dimensionStructures = _(dimensions).map(function(dim) { 
+	var slotGrid = new SlotGrid({ 
+		areaHeight: 20,
+		areaWidth: 20,
+		slotHeight: dim[0],
+		slotWidth: dim[1]
+	});
+	var list = new DoublyLinkedList();
+	_.chain(slotGrid.getAllSlots())
+		.shuffle()
+		.each(function(slot) { 
+			var node = list.push(slot);
+			slot.registerTakenListener(function() { 
+				// var start = node.list.toArray();
+				// console.log(node.prev.data);
+				// console.log(node.next.data);
+				node.remove();
+				// var diff = node.list.toArray().length - start.length;
+				// console.log('difference = ',diff);
+				// console.log(node.list.toArray().length);
+				// if(diff !== -1) debugger;
+				 // console.log('removing node from list',node.data);
+			});
+		});
+	// list.dump();
+	return {
+		list:list,
+		slotGrid: slotGrid
+	};
+	// console.table(slotGrid.slotTable);
+})
+for(var level = 0; level< dimensionStructures.length; level++) { 
+	var list = dimensionStructures[level].list;
+	 // console.log('level',level);
+	  // console.log(dimensionStructures[level].slotGrid);
+	_(45).times(function(slot_i) { 
+		// console.log('----getting element');
+
+		var slot;
+		try { 
+			slot = list.pop();
+		} catch(e) { 
+			return;
+		}
+		var color = '#' + (function co(lor){   return (lor +=
+  [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)])
+  && (lor.length == 6) ?  lor : co(lor); })('');
+		if(slot.taken) throw "Spot already taken";
+		 // console.log("    ",slot);
+		_(slot.height).times(function(i) { 
+			_(slot.width).times(function(j) {
+				if(!_.isUndefined(output[i+slot.y]) && !_.isUndefined(output[i+slot.y][j+slot.x])) { 
+					if(output[i+slot.y][j+slot.x] !== 0) throw "Marking taken spot";
+					output[i+slot.y][j+slot.x]= slot.width*slot.height;
+					setColor(i+slot.y,j+slot.x, color);
+				}
+			});
+		});
+		console.log('MARKING A NODE');
+		_(dimensionStructures.slice(level+1)).each(function(dimension) { 
+			// console.log('Marking ', dimension.slotGrid.slotHeight, dimension.slotGrid.slotWidth);
+			console.log('----dimension', dimension.slotGrid.slotHeight, dimension.slotGrid.slotWidth, 'called with', slot);
+			dimension.slotGrid.markTaken(slot);
+		});
+	})
+}
+console.table(output);
+
+// console.log(slotGrid.getAllSlots())
+
+// slotGrid.markTaken(new Slot({ 
+// 	height: 5,
+// 	width: 5,
+// 	x: 2,
+// 	y: 2
+// }));
+
+// console.table(slotGrid.slotTable);
+
+
+
+
+
+</script>

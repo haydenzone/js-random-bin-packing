@@ -1,0 +1,27 @@
+<script src="DoublyLinkedList.js"></script>
+<script>
+var list = new DoublyLinkedList();
+var beginningNode = list.push(0);
+console.log(beginningNode);
+list.push(1);
+var nodeToRemove = list.push(2);
+list.push(3);
+list.push(3.5);
+var endNode = list.push(4);
+list.dump();
+nodeToRemove.remove();
+list.dump();
+beginningNode.remove();
+list.dump();
+console.log('remove last node');
+endNode.remove();
+list.dump();
+console.log('pop', list.pop());
+list.dump();
+console.log('pop', list.pop());
+list.dump();
+console.log('pop', list.pop());
+list.dump();
+console.log('pop', list.pop());
+list.dump();
+</script>
