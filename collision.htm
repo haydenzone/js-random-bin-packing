@@ -54,19 +54,18 @@ function SlotGrid(args) {
 	this.slotWidth = args.slotWidth;
 
 	this.slotTable = new Array(this.height);
-	for(var i = 0; i < this.height; i++) { 
+	for_(this.height, function(i) { 
 		this.slotTable[i] = new Array(this.width);
-	}
-	for(var i = 0; i < this.height; i++) { 
-		for(var j = 0; j < this.width; j++) { 
-			this.slotTable[i][j] = new Slot({
-				width: this.slotWidth,
-				height: this.slotHeight,
-				x: this.slotWidth*j,
-				y: this.slotHeight*i
-			});
-		}
-	}
+	}.bind(this));
+
+	for_(this.height, this.width, function(i,j) { 
+		this.slotTable[i][j] = new Slot({
+			width: this.slotWidth,
+			height: this.slotHeight,
+			x: this.slotWidth*j,
+			y: this.slotHeight*i
+		});
+	}.bind(this));
 
 };
 SlotGrid.prototype.getAllSlots = function() { 
@@ -141,27 +140,23 @@ for(var level = 0; level< dimensionStructures.length; level++) {
 		if(slot.taken) { 
 			throw "Spot already taken";
 		} 
-		_(slot.height).times(function(i) { 
-			_(slot.width).times(function(j) {
-				if(_(output).hasIndex(i+slot.y,j+slot.x)) { 
-					if(output[i+slot.y][j+slot.x] !== 0) {
-						throw "Marking taken spot";
-					}
-					output[i+slot.y][j+slot.x]= slot.width*slot.height;
-					setColor(i+slot.y,j+slot.x, color);
+		for_(slot.height, slot.width, function(i,j) { 
+			if(_(output).hasIndex(i+slot.y,j+slot.x)) { 
+				if(output[i+slot.y][j+slot.x] !== 0) {
+					throw "Marking taken spot";
 				}
-			});
-		});
+				output[i+slot.y][j+slot.x]= slot.width*slot.height;
+				setColor(i+slot.y,j+slot.x, color);
+			}
+		}.bind(this));
+
 		_(dimensionStructures.slice(level+1)).each(function(dimension) { 
 			dimension.slotGrid.markTaken(slot);
 		});
 	})
 }
 
-
-	console.table(output);
-
-function nestedFor() { 
+function for_() { 
 	var args = _.toArray(arguments);
 	var fun = args.slice(-1)[0];
 	if(!_(fun).isFunction()) { 
@@ -177,6 +172,7 @@ function nestedFor() {
 	});
 	//increment far right
 	while(1) { 
+		fun.apply(null, curIndex);
 		curIndex[curIndex.length-1]++;
 		for(var i = curIndex.length-1; i >= 0; i--) { 
 			if(curIndex[i] >= upperBounds[i]) { 
@@ -189,17 +185,8 @@ function nestedFor() {
 				break;
 			}
 		}
-		fun.apply(null, curIndex);
 	}
-
-	//overflow upwards 
-	//callfunction
 }
-
-nestedFor(5,5,5, function(i,j,k) { 
-	console.log(i,j, k);
-});
-
 
 
 </script>
