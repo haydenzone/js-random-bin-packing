@@ -1,0 +1,58 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="sprite.css">
+<style>
+img { 
+	position: fixed;
+	content: "";
+}
+</style>
+</head>
+<body>
+<div class="output">
+<img class="badge_fea8365577a2359903a0e896fd65eb14">
+</div>
+<script src="jquery-2.1.1.js"></script>
+<script src="DoublyLinkedList.js"></script>
+<script src="underscore.js"></script>
+<script src="RandomBinPacker.js"></script>
+<script src="util.js"></script>
+<script src="badges.js"></script>
+<script>
+function parseDimension(dim) { 
+	var blah = dim.split('x'); //TODO: reverse order in module
+	return _([blah[1], blah[0]]).map(function(i) { 
+		return parseInt(i)/20;
+	});
+}
+var dimensions = _(badges)
+	.chain()
+	.pluck('dimensions')
+	.uniq()
+	.map(parseDimension)
+	.value();
+console.log(dimensions);
+var width = Math.ceil($(window).width()/20);
+var height = Math.ceil($(window).height()/20);
+var binPacker = new RandomBinPacker({
+	dimensions: dimensions,
+	width: width,
+	height: height
+});
+_(badges).chain().shuffle().each(function(badge) { 
+	var dim = parseDimension(badge.dimensions);
+	var spot = binPacker.getSpot(dim[1], dim[0]);
+	if(spot) { 
+		$('<img>').addClass(badge.name).css({
+			top: spot.y*20,
+			left: spot.x*20
+		}).appendTo('.output');
+	}
+
+});
+</script>
+</body>
+</html>
+
+

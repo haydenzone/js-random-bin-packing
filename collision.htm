@@ -5,18 +5,17 @@ td {
 	border: 1px solid black;
 }
 </style>
-<script src="jquery-2.1.1.js"></script>
 <table class="output">
-
 </table>
+<script src="jquery-2.1.1.js"></script>
 <script src="DoublyLinkedList.js"></script>
 <script src="underscore.js"></script>
 <script src="RandomBinPacker.js"></script>
 <script src="util.js"></script>
 <script>
-_(20).times(function() { 
+_(50).times(function() { 
 	var $row = $('<tr>');
-	_(20).times(function() { 
+	_(50).times(function() { 
 		$row.append('<td></td>');
 	})
 	$row.appendTo('.output');
@@ -28,7 +27,8 @@ var dimensions = [
 	[2,2],
 	[3,1],
 	[2,1],
-	[1,2]
+	[1,2],
+	[1,1]
 ];
 
 function chooseRandomColor() {
@@ -40,20 +40,20 @@ function chooseRandomColor() {
 
 var binPacker = new RandomBinPacker({
 	dimensions: dimensions,
-	width: 20,
-	height: 20
+	width: 50,
+	height:50 
 });
 
 
 
-var output = _(20).times(function() { 
-	return _(20).times(function(){ 
+var output = _(50).times(function() { 
+	return _(50).times(function(){ 
 		return 0;
 	});
 });
 
 _(dimensions).each(function(dimension) { 
-	_(100).times(function(slot_i) { 
+	_(225).times(function(slot_i) { 
 		var color = chooseRandomColor();
 		var slot = binPacker.getSpot(dimension[1], dimension[0]);
 		if(!slot) { 
