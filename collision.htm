@@ -11,6 +11,8 @@ td {
 </table>
 <script src="DoublyLinkedList.js"></script>
 <script src="underscore.js"></script>
+<script src="RandomBinPacker.js"></script>
+<script src="util.js"></script>
 <script>
 _(20).times(function() { 
 	var $row = $('<tr>');
@@ -29,151 +31,12 @@ var dimensions = [
 	[1,2]
 ];
 
-//Given a slot, calculate all slots for other dimensions that are taken.
-function Slot(args) { 
-	this.x = args.x;
-	this.y = args.y;
-	this.width = args.width;
-	this.height = args.height;
-	this.taken = false;
-};
-Slot.prototype.markTaken = function() { 
-	if(!this.taken) { 
-		this.onTaken.call(this);
-		this.taken = true;
-	}
-}
-Slot.prototype.registerTakenListener = function(f) { 
-	this.onTaken = f;
-}
-
-function SlotGrid(args) { 
-	this.width = args.areaWidth-args.slotWidth+1;
-	this.height = args.areaHeight-args.slotHeight+1;
-	this.slotHeight = args.slotHeight;
-	this.slotWidth = args.slotWidth;
-
-	this.slotTable = new Array(this.height);
-	_.por(this.height, function(i) { 
-		this.slotTable[i] = new Array(this.width);
-	}.bind(this));
-
-	_.por(this.height, this.width, function(i,j) { 
-		this.slotTable[i][j] = new Slot({
-			width: this.slotWidth,
-			height: this.slotHeight,
-			x: j,
-			y: i
-		});
-	}.bind(this));
-
-};
-SlotGrid.prototype.getAllSlots = function() { 
-	return _(this.slotTable).flatten();
-};
-SlotGrid.prototype.markTaken = function(slot) { 
-	var xStart = _.max([0,slot.x-this.slotWidth+1]);
-	var xEnd = slot.x+slot.width;
-	var yStart = _.max([0, slot.y-this.slotHeight+1]);
-	var yEnd = slot.y+slot.height;
-	for(var i = xStart; i < xEnd; i++) { 
-		for(var j = yStart; j < yEnd; j++) { 
-			try { 
-				this.slotTable[j][i].markTaken();
-			} catch(e){}
-		}
-	}
-};
-
 function chooseRandomColor() {
 	return '#' + (function co(lor){   return (lor += [0,1,2,3,4,5,6,7,8,9,'a','b','c','d','e','f'][Math.floor(Math.random()*16)]) && (lor.length == 6) ?  lor : co(lor); })('');
 }
 
-_.mixin({ 
-	hasIndex:function(arr,i,j) { 
-		return !_.isUndefined(arr[i]) && !_.isUndefined(arr[i][j]);
-	},
-	isInt: function (n){
-	    return typeof n== "number" && isFinite(n) && n%1===0;
-	},
-	por: function() { 
-		var args = _.toArray(arguments);
-		var fun = args.slice(-1)[0];
-		if(!_(fun).isFunction()) { 
-			throw "Last argument must be a function";
-		}
-		var upperBounds = args.slice(0,-1);
-		var curIndex = [];
-		_(upperBounds).each(function(arg) { 
-			if(!_(arg).isInt()) { 
-				throw "All but last argument must be integers";
-			}
-			curIndex.push(0);
-		});
-		//increment far right
-		while(1) { 
-			fun.apply(null, curIndex);
-			curIndex[curIndex.length-1]++;
-			for(var i = curIndex.length-1; i >= 0; i--) { 
-				if(curIndex[i] >= upperBounds[i]) { 
-					curIndex[i] = 0;
-					if(i === 0) { 
-						return; //end of loop
-					}
-					curIndex[i-1]++;
-				} else { 
-					break;
-				}
-			}
-		}
-	}
-});
 
-function RandomBinPacker(args) { 
-	this.dimensions = args.dimensions;
-	var structures = _(this.dimensions).map(function(dim) { 
-		var slotGrid = new SlotGrid({ 
-			areaHeight: args.height,
-			areaWidth: args.width,
-			slotHeight: dim[0],
-			slotWidth: dim[1]
-		});
-		var list = new DoublyLinkedList();
-		_.chain(slotGrid.getAllSlots())
-			.shuffle()
-			.each(function(slot) { 
-				var node = list.push(slot);
-				slot.registerTakenListener(function() { 
-					node.remove();
-				});
-			});
-		return {
-			list:list,
-			slotGrid: slotGrid
-		};
-	});
-	var keys = _(dimensions).map(function(dim) {return dim[0]+'x'+dim[1]});
-	this.spotRecords = _.object(keys, structures);
 
-}
-
-RandomBinPacker.prototype.getSpot = function(width, height) {
-
-	var list = this.spotRecords[height+'x'+width].list;
-	var slot;
-	try { 
-		slot = list.pop();
-	} catch(e) { 
-		return false;
-	}
-	if(slot.taken) { 
-		throw "Spot already taken";
-	} 
-	_(this.spotRecords).each(function(dimension) { 
-		dimension.slotGrid.markTaken(slot);
-	});
-	return _.pick(slot, 'width', 'height','x', 'y');
-};
 
 var binPacker = new RandomBinPacker({
 	dimensions: dimensions,
@@ -188,9 +51,9 @@ var output = _(20).times(function() {
 		return 0;
 	});
 });
-// for(var level = 0; level< dimensionStructures.length; level++) { 
+
 _(dimensions).each(function(dimension) { 
-	_(45).times(function(slot_i) { 
+	_(100).times(function(slot_i) { 
 		var color = chooseRandomColor();
 		var slot = binPacker.getSpot(dimension[1], dimension[0]);
 		if(!slot) { 
