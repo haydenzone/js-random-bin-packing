@@ -54,11 +54,11 @@ function SlotGrid(args) {
 	this.slotWidth = args.slotWidth;
 
 	this.slotTable = new Array(this.height);
-	for_(this.height, function(i) { 
+	_.por(this.height, function(i) { 
 		this.slotTable[i] = new Array(this.width);
 	}.bind(this));
 
-	for_(this.height, this.width, function(i,j) { 
+	_.por(this.height, this.width, function(i,j) { 
 		this.slotTable[i][j] = new Slot({
 			width: this.slotWidth,
 			height: this.slotHeight,
@@ -95,7 +95,90 @@ _.mixin({
 	},
 	isInt: function (n){
 	    return typeof n== "number" && isFinite(n) && n%1===0;
+	},
+	por: function() { 
+		var args = _.toArray(arguments);
+		var fun = args.slice(-1)[0];
+		if(!_(fun).isFunction()) { 
+			throw "Last argument must be a function";
+		}
+		var upperBounds = args.slice(0,-1);
+		var curIndex = [];
+		_(upperBounds).each(function(arg) { 
+			if(!_(arg).isInt()) { 
+				throw "All but last argument must be integers";
+			}
+			curIndex.push(0);
+		});
+		//increment far right
+		while(1) { 
+			fun.apply(null, curIndex);
+			curIndex[curIndex.length-1]++;
+			for(var i = curIndex.length-1; i >= 0; i--) { 
+				if(curIndex[i] >= upperBounds[i]) { 
+					curIndex[i] = 0;
+					if(i === 0) { 
+						return; //end of loop
+					}
+					curIndex[i-1]++;
+				} else { 
+					break;
+				}
+			}
+		}
 	}
+});
+
+function RandomBinPacker(args) { 
+	this.dimensions = args.dimensions;
+	var structures = _(this.dimensions).map(function(dim) { 
+		var slotGrid = new SlotGrid({ 
+			areaHeight: args.height,
+			areaWidth: args.width,
+			slotHeight: dim[0],
+			slotWidth: dim[1]
+		});
+		var list = new DoublyLinkedList();
+		_.chain(slotGrid.getAllSlots())
+			.shuffle()
+			.each(function(slot) { 
+				var node = list.push(slot);
+				slot.registerTakenListener(function() { 
+					node.remove();
+				});
+			});
+		return {
+			list:list,
+			slotGrid: slotGrid
+		};
+	});
+	var keys = _(dimensions).map(function(dim) {return dim[0]+'x'+dim[1]});
+	this.spotRecords = _.object(keys, structures);
+
+}
+
+RandomBinPacker.prototype.getSpot = function(width, height) {
+
+	var list = this.spotRecords[height+'x'+width].list;
+	var slot;
+	try { 
+		slot = list.pop();
+	} catch(e) { 
+		return false;
+	}
+	if(slot.taken) { 
+		throw "Spot already taken";
+	} 
+	_(this.spotRecords).each(function(dimension) { 
+		dimension.slotGrid.markTaken(slot);
+	});
+	return _.pick(slot, 'width', 'height','x', 'y');
+};
+
+var binPacker = new RandomBinPacker({
+	dimensions: dimensions,
+	width: 20,
+	height: 20
 });
 
 
@@ -105,42 +188,15 @@ var output = _(20).times(function() {
 		return 0;
 	});
 });
-var dimensionStructures = _(dimensions).map(function(dim) { 
-	var slotGrid = new SlotGrid({ 
-		areaHeight: 20,
-		areaWidth: 20,
-		slotHeight: dim[0],
-		slotWidth: dim[1]
-	});
-	var list = new DoublyLinkedList();
-	_.chain(slotGrid.getAllSlots())
-		.shuffle()
-		.each(function(slot) { 
-			var node = list.push(slot);
-			slot.registerTakenListener(function() { 
-				node.remove();
-			});
-		});
-	return {
-		list:list,
-		slotGrid: slotGrid
-	};
-})
-for(var level = 0; level< dimensionStructures.length; level++) { 
-	var list = dimensionStructures[level].list;
+// for(var level = 0; level< dimensionStructures.length; level++) { 
+_(dimensions).each(function(dimension) { 
 	_(45).times(function(slot_i) { 
-
-		var slot;
-		try { 
-			slot = list.pop();
-		} catch(e) { 
+		var color = chooseRandomColor();
+		var slot = binPacker.getSpot(dimension[1], dimension[0]);
+		if(!slot) { 
 			return;
 		}
-		var color = chooseRandomColor();
-		if(slot.taken) { 
-			throw "Spot already taken";
-		} 
-		for_(slot.height, slot.width, function(i,j) { 
+		_.por(slot.height, slot.width, function(i,j) { 
 			if(_(output).hasIndex(i+slot.y,j+slot.x)) { 
 				if(output[i+slot.y][j+slot.x] !== 0) {
 					throw "Marking taken spot";
@@ -150,43 +206,9 @@ for(var level = 0; level< dimensionStructures.length; level++) {
 			}
 		}.bind(this));
 
-		_(dimensionStructures.slice(level)).each(function(dimension) { 
-			dimension.slotGrid.markTaken(slot);
-		});
 	})
-}
+});
 
-function for_() { 
-	var args = _.toArray(arguments);
-	var fun = args.slice(-1)[0];
-	if(!_(fun).isFunction()) { 
-		throw "Last argument must be a function";
-	}
-	var upperBounds = args.slice(0,-1);
-	var curIndex = [];
-	_(upperBounds).each(function(arg) { 
-		if(!_(arg).isInt()) { 
-			throw "All but last argument must be integers";
-		}
-		curIndex.push(0);
-	});
-	//increment far right
-	while(1) { 
-		fun.apply(null, curIndex);
-		curIndex[curIndex.length-1]++;
-		for(var i = curIndex.length-1; i >= 0; i--) { 
-			if(curIndex[i] >= upperBounds[i]) { 
-				curIndex[i] = 0;
-				if(i === 0) { 
-					return; //end of loop
-				}
-				curIndex[i-1]++;
-			} else { 
-				break;
-			}
-		}
-	}
-}
 
 
 </script>
