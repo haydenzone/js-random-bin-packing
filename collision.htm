@@ -48,8 +48,8 @@ Slot.prototype.registerTakenListener = function(f) {
 }
 
 function SlotGrid(args) { 
-	this.width = Math.ceil(args.areaWidth/args.slotWidth);
-	this.height = Math.ceil(args.areaHeight/args.slotHeight);
+	this.width = args.areaWidth-args.slotWidth+1;
+	this.height = args.areaHeight-args.slotHeight+1;
 	this.slotHeight = args.slotHeight;
 	this.slotWidth = args.slotWidth;
 
@@ -62,8 +62,8 @@ function SlotGrid(args) {
 		this.slotTable[i][j] = new Slot({
 			width: this.slotWidth,
 			height: this.slotHeight,
-			x: this.slotWidth*j,
-			y: this.slotHeight*i
+			x: j,
+			y: i
 		});
 	}.bind(this));
 
@@ -72,10 +72,10 @@ SlotGrid.prototype.getAllSlots = function() {
 	return _(this.slotTable).flatten();
 };
 SlotGrid.prototype.markTaken = function(slot) { 
-	var xStart = Math.floor(slot.x/this.slotWidth);
-	var xEnd = Math.ceil((slot.x+slot.width)/this.slotWidth);
-	var yStart = Math.floor(slot.y/this.slotHeight);
-	var yEnd = Math.ceil((slot.y+slot.height)/this.slotHeight);
+	var xStart = _.max([0,slot.x-this.slotWidth+1]);
+	var xEnd = slot.x+slot.width;
+	var yStart = _.max([0, slot.y-this.slotHeight+1]);
+	var yEnd = slot.y+slot.height;
 	for(var i = xStart; i < xEnd; i++) { 
 		for(var j = yStart; j < yEnd; j++) { 
 			try { 
@@ -150,7 +150,7 @@ for(var level = 0; level< dimensionStructures.length; level++) {
 			}
 		}.bind(this));
 
-		_(dimensionStructures.slice(level+1)).each(function(dimension) { 
+		_(dimensionStructures.slice(level)).each(function(dimension) { 
 			dimension.slotGrid.markTaken(slot);
 		});
 	})
